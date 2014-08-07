@@ -183,7 +183,13 @@ void qs_update(qs_set_t *qs, kseq_t *seq, int strict) {
   if (seq->seq.l > qs->l) qs->l = seq->seq.l;
   
   /* update length (0-indexed) */
-  qs->lm[seq->seq.l-1]++;
+  if (seq->seq.l < 1) {
+    fprintf(stderr,
+            "WARNING: zero-lengthed seq %s; counting it as len=1\n", seq->name.s);
+    qs->lm[0]++;
+  } else {
+    qs->lm[seq->seq.l-1]++;
+  }
 
   char *kmer=NULL;
   khiter_t key;
@@ -373,7 +379,10 @@ If -i is used, these will have \"_1.txt\" and \"_2.txt\" suffixes.\n", stderr);
 int main(int argc, char *argv[]) {
   int c, pr=0, k=0, emit=0, strict=0, interleaved=0;
   int has_prefix=0;
-  char *qual_fn="qual.txt", *nucl_fn="nucl.txt", *len_fn="len.txt", *kmer_fn="kmer.txt";
+  char *qual_fn=NULL;
+  char *nucl_fn=NULL;
+  char *len_fn=NULL;
+  char *kmer_fn=NULL;
   char *prefix="", *rname;
   FILE *qual_fp[2], *nucl_fp[2], *len_fp[2], *kmer_fp[2];
   qual_type qtype=SANGER;
@@ -462,15 +471,13 @@ int main(int argc, char *argv[]) {
     }
     
   }
-  free(suffix); 
+  if (suffix != NULL) free(suffix);
   if (has_prefix) free(prefix);
+  if (nucl_fn != NULL) free(nucl_fn);
+  if (qual_fn != NULL) free(qual_fn);
+  if (len_fn != NULL) free(len_fn);
+  if (kmer_fn != NULL) free(kmer_fn);
 
-  if (has_prefix) {
-    if (qtype != NONE) free(qual_fn);
-    free(nucl_fn); free(len_fn); 
-    if (k) free(kmer_fn);
-  }
-  
   qs[0] = qs_init(qtype, k);
   if (interleaved) {
     qs[1] = qs_init(qtype, k);
